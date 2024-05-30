@@ -1,0 +1,275 @@
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const WIDTH = canvas.width;
+const HEIGHT = canvas.height;
+
+const playerSpeed = 2;
+const playerSize = 20;
+const finishLineHeight = 20;
+
+let player;
+let blueBots;
+let redBots;
+let pits;
+let masks;
+let levelDuration;
+let finishLine;
+let hasMask;
+let isGreenTrack;
+
+function initializeLevel(level) {
+    player = {
+        x: WIDTH / 2 - playerSize / 2,
+        y: HEIGHT - 50,
+        width: playerSize,
+        height: playerSize,
+        color: 'blue',
+        speed: playerSpeed
+    };
+
+    blueBots = [];
+    redBots = [];
+    pits = [];
+    masks = [];
+    hasMask = false;
+    isGreenTrack = false;
+    const botSize = 20;
+    const pitSize = 50;
+    const maskSize = 20;
+
+    if (level === 1) {
+        levelDuration = 8000; // 8 seconds
+        finishLine = HEIGHT - levelDuration / 1000 * playerSpeed * 60;
+        // Create blue bots
+        for (let i = 0; i < 29; i++) {
+            blueBots.push({
+                x: Math.random() * (WIDTH - botSize),
+                y: Math.random() * (HEIGHT / 2),
+                width: botSize,
+                height: botSize,
+                color: 'blue'
+            });
+        }
+        // Create red bots
+        for (let i = 0; i < 10; i++) {
+            redBots.push({
+                x: Math.random() * (WIDTH - botSize),
+                y: Math.random() * (HEIGHT / 2),
+                width: botSize,
+                height: botSize,
+                color: 'red'
+            });
+        }
+    } else if (level === 2) {
+        levelDuration = 12000; // 12 seconds
+        finishLine = HEIGHT - levelDuration / 1000 * playerSpeed * 60;
+        // Create blue bots
+        for (let i = 0; i < 40; i++) {
+            blueBots.push({
+                x: Math.random() * (WIDTH - botSize),
+                y: Math.random() * (HEIGHT / 2),
+                width: botSize,
+                height: botSize,
+                color: 'blue'
+            });
+        }
+        // Create red bots
+        for (let i = 0; i < 15; i++) {
+            redBots.push({
+                x: Math.random() * (WIDTH - botSize),
+                y: Math.random() * (HEIGHT / 2),
+                width: botSize,
+                height: botSize,
+                color: 'red'
+            });
+        }
+        // Create pits
+        for (let i = 0; i < 5; i++) {
+            let pitX, pitY;
+            let validPosition = false;
+            while (!validPosition) {
+                pitX = Math.random() * (WIDTH / 2 - pitSize);
+                pitY = Math.random() * (HEIGHT / 2);
+                validPosition = true;
+                redBots.forEach(bot => {
+                    if (Math.abs(bot.x - pitX) < pitSize && Math.abs(bot.y - pitY) < pitSize) {
+                        validPosition = false;
+                    }
+                });
+            }
+            pits.push({
+                x: pitX,
+                y: pitY,
+                width: pitSize,
+                height: pitSize,
+                color: 'black'
+            });
+        }
+    } else if (level === 3) {
+        levelDuration = 15000; // 15 seconds
+        finishLine = HEIGHT - levelDuration / 1000 * playerSpeed * 60;
+        // Create blue bots
+        for (let i = 0; i < 40; i++) {
+            blueBots.push({
+                x: Math.random() * (WIDTH - botSize),
+                y: Math.random() * (HEIGHT / 2),
+                width: botSize,
+                height: botSize,
+                color: 'blue'
+            });
+        }
+        // Create red bots
+        for (let i = 0; i < 15; i++) {
+            redBots.push({
+                x: Math.random() * (WIDTH - botSize),
+                y: Math.random() * (HEIGHT / 2),
+                width: botSize,
+                height: botSize,
+                color: 'red'
+            });
+        }
+        // Create masks
+        for (let i = 0; i < 5; i++) {
+            let maskX, maskY;
+            let validPosition = false;
+            while (!validPosition) {
+                maskX = Math.random() * (WIDTH - maskSize);
+                maskY = Math.random() * (HEIGHT / 2);
+                validPosition = true;
+                redBots.forEach(bot => {
+                    if (Math.abs(bot.x - maskX) < maskSize && Math.abs(bot.y - maskY) < maskSize) {
+                        validPosition = false;
+                    }
+                });
+            }
+            masks.push({
+                x: maskX,
+                y: maskY,
+                width: maskSize,
+                height: maskSize,
+                color: 'gray'
+            });
+        }
+    }
+}
+
+function drawRect(x, y, width, height, color) {
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, width, height);
+}
+
+function update() {
+    ctx.clearRect(0, 0, WIDTH, HEIGHT);
+    drawRect(player.x, player.y, player.width, player.height, player.color);
+
+    blueBots.forEach(bot => {
+        drawRect(bot.x, bot.y, bot.width, bot.height, bot.color);
+    });
+
+    redBots.forEach(bot => {
+        drawRect(bot.x, bot.y, bot.width, bot.height, bot.color);
+    });
+
+    pits.forEach(pit => {
+        drawRect(pit.x, pit.y, pit.width, pit.height, pit.color);
+    });
+
+    masks.forEach(mask => {
+        drawRect(mask.x, mask.y, mask.width, mask.height, mask.color);
+    });
+
+    // Draw finish line
+    drawRect(0, finishLine, WIDTH, finishLineHeight, 'green');
+}
+
+function checkCollision(rect1, rect2) {
+    return (
+        rect1.x < rect2.x + rect2.width &&
+        rect1.x + rect1.width > rect2.x &&
+        rect1.y < rect2.y + rect2.height &&
+        rect1.y + rect1.height > rect2.y
+    );
+}
+
+function gameLoop() {
+    update();
+
+    blueBots.forEach((bot, index) => {
+        if (checkCollision(player, bot)) {
+            player.speed += 0.5;
+            blueBots.splice(index, 1);
+        }
+    });
+
+    redBots.forEach((bot) => {
+        if (checkCollision(player, bot)) {
+            alert('წააგე');
+            document.location.reload();
+        }
+    });
+
+    pits.forEach((pit) => {
+        if (checkCollision(player, pit)) {
+            alert('წააგე');
+            document.location.reload();
+        }
+    });
+
+    masks.forEach((mask, index) => {
+        if (checkCollision(player, mask)) {
+            hasMask = true;
+            masks.splice(index, 1);
+        }
+    });
+
+    if ((Date.now() - startTime) >= 12000 && !isGreenTrack && level === 3) {
+        isGreenTrack = true;
+        redBots = []; // Clear red bots
+        pits = []; // Clear pits
+        ctx.fillStyle = 'green';
+    }
+
+    if (player.y <= finishLine + finishLineHeight) {
+        if (level === 1) {
+            alert('გადაივლი პირველი ლეველი!');
+            addStars(3);
+            unlockLevel(2);
+        } else if (level === 2) {
+            alert('გადაივლი მეორე ლეველი!');
+            addStars(4);
+            unlockLevel(3);
+        } else if (level === 3) {
+            if (hasMask) {
+                alert('გადაივლი მესამე ლეველი!');
+                addStars(5);
+                showEndScreen();
+            } else {
+                alert('წააგე, არ გაქვს პირბადე!');
+                document.location.reload();
+            }
+        }
+        if (level !== 3) {
+            document.location.reload();
+        }
+    }
+
+    requestAnimationFrame(gameLoop);
+}
+
+document.addEventListener('keydown', function (event) {
+    if (event.key === 'w') {
+        player.y -= player.speed;
+    } else if (event.key === 'a') {
+        player.x -= player.speed;
+    } else if (event.key === 'd') {
+        player.x += player.speed;
+    }
+});
+
+let startTime;
+function startGame(level) {
+    initializeLevel(level);
+    startTime = Date.now();
+    gameLoop();
+}
